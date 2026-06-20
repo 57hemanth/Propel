@@ -1,0 +1,6 @@
+{
+  "name": "Proposal Generator",
+  "description": "Generate clean, professional first-draft proposals instantly by entering the client's name and service requirements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
