@@ -1,17 +1,12 @@
 import express, { Request, Response } from "express";
-import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
 
 app.use(express.json());
-
-// Resolve static build path
-const distPath = path.join(process.cwd(), "dist");
 
 // Simple authentication token verification middleware
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "karan3";
@@ -24,7 +19,6 @@ app.post("/api/login", (req: Request, res: Response) => {
   }
   
   if (password === ADMIN_PASSWORD) {
-    // Return a simple mock token that is secure enough for this local applet
     const token = Buffer.from(password).toString("base64");
     res.json({ success: true, token });
   } else {
@@ -52,9 +46,7 @@ const authenticateUser = (req: Request, res: Response, next: () => void) => {
   }
 };
 
-// Lazy initialization of Gemini client to fail gracefully if key is missing
 let aiClient: GoogleGenAI | null = null;
-
 function getAiClient(): GoogleGenAI {
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -73,7 +65,6 @@ function getAiClient(): GoogleGenAI {
   return aiClient;
 }
 
-// Generate structured proposal draft using Gemini-3.5-flash
 app.post("/api/proposal/generate", authenticateUser, async (req: Request, res: Response) => {
   const {
     clientName,
@@ -133,7 +124,6 @@ Project Inputs:
 
 Make sure the proposed timeline is split into clear milestones/phases matching a fast timeline. Ensure budget elements are clearly broken down. Maintain absolute professional consistency.`;
 
-    // Define response schema to conform to types.ts and prevent hallucination/formatting failures
     const proposalResponseSchema = {
       type: Type.OBJECT,
       properties: {
@@ -225,31 +215,5 @@ Make sure the proposed timeline is split into clear milestones/phases matching a
     });
   }
 });
-
-// Configure Vite middleware in development
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    // Serve production static assets from dist
-    app.use(express.static(distPath));
-    app.get("*", (req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running securely on http://localhost:${PORT}`);
-  });
-}
-
-if (!process.env.VERCEL) {
-  startServer();
-}
 
 export default app;
